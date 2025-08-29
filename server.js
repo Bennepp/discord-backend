@@ -3,14 +3,14 @@ import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config(); // Load environment variables from .env
+dotenv.config();
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Blacklisted terms
-const blacklist = ["testterm", "@everyone", "spam"]; // Add more terms here
+const blacklist = ["testterm", "@everyone", "spam"]; // Add any terms you want to block
 
 app.post("/submit", async (req, res) => {
   try {
@@ -22,10 +22,13 @@ app.post("/submit", async (req, res) => {
       return res.status(500).json({ success: false, message: "Server misconfigured" });
     }
 
-    // Check each input field separately for blacklisted terms
+    // Debug: log incoming submission
+    console.log("Incoming submission:", { name, location, description });
+
+    // Check for blacklisted terms
     const foundTerm = blacklist.find(term =>
-      [name, location, description].some(field =>
-        field && field.toLowerCase().includes(term)
+      [name || "", location || "", description || ""].some(field =>
+        field.toLowerCase().includes(term)
       )
     );
 
@@ -37,14 +40,14 @@ app.post("/submit", async (req, res) => {
       });
     }
 
-    // Prepare payload for Discord webhook
+    // Prepare Discord webhook payload
     const payload = {
       embeds: [
         {
-          title: name,
-          description,
+          title: name || "No name provided",
+          description: description || "",
           color: 16711680,
-          fields: [{ name: "Location", value: location }]
+          fields: [{ name: "Location", value: location || "No location provided" }]
         }
       ]
     };
@@ -67,6 +70,5 @@ app.post("/submit", async (req, res) => {
   }
 });
 
-// Listen on Railway dynamic port
 const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
