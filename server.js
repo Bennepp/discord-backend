@@ -1,4 +1,3 @@
-
 import express from "express";
 import fetch from "node-fetch";
 import cors from "cors";
@@ -7,18 +6,16 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Blacklist setup
+const blacklist = ["@everyone", "testterm", "spam"];
+
 app.post("/submit", async (req, res) => {
   const { name, location, description } = req.body;
   const webhookURL = process.env.DISCORD_WEBHOOK;
 
-  // Combine all text into lowercase
   const combinedText = `${name} ${location} ${description}`.toLowerCase();
-
-  // Blacklist terms
-  const blacklist = ["@everyone", "spam", "testterm"];
-
-  // Check for any blacklisted term
   const foundTerm = blacklist.find(term => combinedText.includes(term));
+
   if (foundTerm) {
     console.log(`Blocked submission containing blacklisted term: ${foundTerm}`);
     return res.status(400).json({
@@ -27,7 +24,6 @@ app.post("/submit", async (req, res) => {
     });
   }
 
-  // Build Discord payload
   const payload = {
     embeds: [
       {
@@ -46,17 +42,14 @@ app.post("/submit", async (req, res) => {
       body: JSON.stringify(payload)
     });
 
-    if (response.ok) {
-      res.json({ success: true });
-    } else {
-      res.status(500).json({ success: false, message: "Failed to send to Discord." });
-    }
+    if (response.ok) res.json({ success: true });
+    else res.status(500).json({ success: false, message: "Failed to send to Discord." });
   } catch (err) {
     console.error(err);
     res.status(500).json({ success: false, message: "Server error." });
   }
 });
 
-const PORT = process.env.PORT || 3000;
+// Use Railway dynamic port
+const PORT = process.env.PORT || 8080;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
