@@ -10,13 +10,13 @@ app.post("/submit", async (req, res) => {
   const { name, location, description } = req.body;
   const webhookURL = process.env.DISCORD_WEBHOOK;
 
-  // Combine all text and convert to lowercase
+  // Combine all text into lowercase
   const combinedText = `${name} ${location} ${description}`.toLowerCase();
 
-  // Define blacklisted terms for testing
+  // Blacklist terms
   const blacklist = ["@everyone", "spam", "testterm"];
 
-  // Check if any blacklisted term exists
+  // Check for any blacklisted term
   const foundTerm = blacklist.find(term => combinedText.includes(term));
   if (foundTerm) {
     console.log(`Blocked submission containing blacklisted term: ${foundTerm}`);
