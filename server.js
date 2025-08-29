@@ -9,66 +9,36 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Blacklisted terms
-const blacklist = ["testterm", "@everyone", "spam"]; // Add any terms you want to block
-
-// Debug startup log
-console.log("🚀 Starting server with blacklist:", blacklist);
+const blacklist = ["testterm", "@everyone", "spam"]; // blacklisted terms
 
 app.post("/submit", async (req, res) => {
+  const { name = "", location = "", description = "" } = req.body;
+  const webhookURL = process.env.DISCORD_WEBHOOK;
+
+  if (!webhookURL) return res.status(500).json({ success: false, message: "Server misconfigured" });
+
+  // Check blacklist
+  if (blacklist.some(term => [name, location, description].some(field => field.toLowerCase().includes(term)))) {
+    return res.status(400).json({ success: false, message: "Submission contains a blacklisted term and was not sent." });
+  }
+
   try {
-    const { name, location, description } = req.body;
-    const webhookURL = process.env.DISCORD_WEBHOOK;
-
-    if (!webhookURL) {
-      console.error("DISCORD_WEBHOOK not set");
-      return res.status(500).json({ success: false, message: "Server misconfigured" });
-    }
-
-    // Debug: log incoming submission
-    console.log("Incoming submission:", { name, location, description });
-
-    // Check for blacklisted terms
-    const foundTerm = blacklist.find(term =>
-      [name || "", location || "", description || ""].some(field =>
-        field.toLowerCase().includes(term)
-      )
-    );
-
-    if (foundTerm) {
-      console.log(`Blocked submission containing blacklisted term: ${foundTerm}`);
-      return res.status(400).json({
-        success: false,
-        message: `Submission contains a blacklisted term: "${foundTerm}" and was not sent.`
-      });
-    }
-
-    // Prepare Discord webhook payload
     const payload = {
       embeds: [
         {
-          title: name || "No name provided",
-          description: description || "",
+          title: name,
+          description,
           color: 16711680,
-          fields: [{ name: "Location", value: location || "No location provided" }]
+          fields: [{ name: "Location", value: location }]
         }
       ]
     };
 
-    const response = await fetch(webhookURL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
-    });
+    const response = await fetch(webhookURL, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload) });
 
-    if (response.ok) {
-      return res.json({ success: true });
-    } else {
-      return res.status(500).json({ success: false, message: "Failed to send to Discord" });
-    }
-
+    return res.json({ success: response.ok });
   } catch (err) {
-    console.error("Error in /submit:", err);
+    console.error(err);
     return res.status(500).json({ success: false, message: "Server error" });
   }
 });
