@@ -12,6 +12,9 @@ app.use(express.json());
 // Blacklisted terms
 const blacklist = ["testterm", "@everyone", "spam"]; // Add any terms you want to block
 
+// Debug startup log
+console.log("🚀 Starting server with blacklist:", blacklist);
+
 app.post("/submit", async (req, res) => {
   try {
     const { name, location, description } = req.body;
