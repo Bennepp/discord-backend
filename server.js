@@ -3,14 +3,14 @@ import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config(); // Load .env file
+dotenv.config(); // Load environment variables from .env
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
 // Blacklisted terms
-const blacklist = ["testterm", "@everyone", "spam"];
+const blacklist = ["testterm", "@everyone", "spam"]; // Add more terms here
 
 app.post("/submit", async (req, res) => {
   try {
@@ -22,7 +22,7 @@ app.post("/submit", async (req, res) => {
       return res.status(500).json({ success: false, message: "Server misconfigured" });
     }
 
-    // Check each field separately for blacklisted terms
+    // Check each input field separately for blacklisted terms
     const foundTerm = blacklist.find(term =>
       [name, location, description].some(field =>
         field && field.toLowerCase().includes(term)
@@ -37,6 +37,7 @@ app.post("/submit", async (req, res) => {
       });
     }
 
+    // Prepare payload for Discord webhook
     const payload = {
       embeds: [
         {
@@ -55,14 +56,14 @@ app.post("/submit", async (req, res) => {
     });
 
     if (response.ok) {
-      res.json({ success: true });
+      return res.json({ success: true });
     } else {
-      res.status(500).json({ success: false, message: "Failed to send to Discord" });
+      return res.status(500).json({ success: false, message: "Failed to send to Discord" });
     }
 
   } catch (err) {
     console.error("Error in /submit:", err);
-    res.status(500).json({ success: false, message: "Server error" });
+    return res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
