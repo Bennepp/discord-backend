@@ -3,14 +3,14 @@ import fetch from "node-fetch";
 import cors from "cors";
 import dotenv from "dotenv";
 
-dotenv.config(); // Load environment variables from .env
+dotenv.config(); // Load .env file
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Blacklist array
-const blacklist = ["testterm", "@everyone", "spam"]; // testterm is first
+// Blacklisted terms
+const blacklist = ["testterm", "@everyone", "spam"];
 
 app.post("/submit", async (req, res) => {
   try {
@@ -22,8 +22,12 @@ app.post("/submit", async (req, res) => {
       return res.status(500).json({ success: false, message: "Server misconfigured" });
     }
 
-    const combinedText = `${name} ${location} ${description}`.toLowerCase();
-    const foundTerm = blacklist.find(term => combinedText.includes(term));
+    // Check each field separately for blacklisted terms
+    const foundTerm = blacklist.find(term =>
+      [name, location, description].some(field =>
+        field && field.toLowerCase().includes(term)
+      )
+    );
 
     if (foundTerm) {
       console.log(`Blocked submission containing blacklisted term: ${foundTerm}`);
